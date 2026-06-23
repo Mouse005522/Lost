@@ -1,0 +1,17 @@
+{
+    "name": "Flow",
+    "rootNamespace": "",
+    "references": [
+        "GUID:501d9dd73aeb7f548a401908804b1c9c",
+        "GUID:f51ebe6a0ceec4240a699833d6309b23"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
