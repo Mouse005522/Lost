@@ -1,4 +1,5 @@
-﻿namespace Kun.Tool
+﻿using UnityEngine;
+namespace Kun.Tool
 {
     public class FlowService : IFlowable
     {
@@ -12,7 +13,7 @@
         /// </summary>
         protected virtual void Setup ()
         {
-            
+
         }
 
         void IFlowable.OnInit ()
@@ -100,7 +101,7 @@
 
         }
 
-        void IFlowable.OnDrawGizmos () 
+        void IFlowable.OnDrawGizmos ()
         {
             DoDrawGizmos ();
         }

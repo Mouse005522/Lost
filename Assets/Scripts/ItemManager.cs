@@ -1,0 +1,83 @@
+﻿using UnityEngine;
+using System.Collections.Generic;
+using Kun.Tool;
+
+public class ItemManager : FlowManager
+{
+    [EasyInject]
+    OverlayCanvasController overlayCanvasController;
+
+    List<Item> items = new List<Item> ();
+
+    List<TipItem> tipItems = new List<TipItem> ();
+    List<ExploreItem> exploreItems = new List<ExploreItem> ();
+
+    [SerializeField]
+    GameObject itemRoot;
+
+    protected override void PrepareSubFlowables ()
+    {
+        base.PrepareSubFlowables ();
+        items.Clear ();
+
+        if (itemRoot != null)
+        {
+            items.AddRange (itemRoot.GetComponentsInChildren<Item> (true));
+
+            tipItems = items.FindAll (item => item is TipItem).ConvertAll (item => item as TipItem);
+
+            subFlowables.AddRange (items.ConvertAll (item => item as IFlowable));
+        }
+        else
+        {
+            Debug.LogError ($"{name} 沒有綁定 itemRoot", this);
+        }
+    }
+
+    public void ReceiveItemMessage (ItemDTO itemDto)
+    {
+        if (itemDto == null)
+        {
+            Debug.LogError ($"{name} 收到空的 ItemDTO", this);
+        }
+        else if (string.IsNullOrEmpty (itemDto.msg))
+        {
+            Debug.LogError ($"{name} 收到空的 Item 訊息內容", this);
+        }
+        else
+        {
+            Debug.Log ($"收到 {itemDto.msgType} 訊息: {itemDto.msg}", this);
+
+            if (itemDto.msgType == ItemMsgType.Tip)
+            {
+                bool end = receiveExploreMsgs.Contains (itemDto.msg);
+
+                overlayCanvasController.ShowTip (itemDto.msg, end);
+
+                if (end)
+                {
+                    receiveExploreMsgs.Remove (itemDto.msg);
+
+                    if (tipItems.TryFind (i => i.Msg == itemDto.msg, out TipItem tip))
+                    {
+                        tip.SetInteractable (false);
+                    }
+                    else
+                    {
+                        Debug.LogError ($"{name} 找不到對應的 TipItem: {itemDto.msg}", this);
+                    }
+                }
+            }
+            else if (itemDto.msgType == ItemMsgType.Explore)
+            {
+                receiveExploreMsgs.Add (itemDto.msg);
+            }
+            else 
+            {
+                Debug.LogError ($"{name} 收到未知的 Item 訊息類型: {itemDto.msgType}", this);
+            }
+        }
+    }
+
+    List<string> receiveExploreMsgs = new List<string> ();
+}

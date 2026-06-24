@@ -5,15 +5,29 @@ public class MainCore : MonoBehaviour
 {
     ServiceCollection collection = null;
 
+    [SerializeField]
+    PlayerController player;
+
+    [SerializeField]
+    OverlayCanvasController overlayCanvasController;
+
+    [SerializeField]
+    ItemManager itemManager;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start ()
     {
         collection = new ServiceCollection ();
 
+        collection.AddService<InputController> ();
+
+        collection.AddService (player);
+        collection.AddService (overlayCanvasController);
+        collection.AddService (itemManager);
+
+        collection.BindingService ();
         collection.SetupServices ();
         collection.InitServices ();
-
-        collection.AddService<InputController> ();
 
         Application.onBeforeRender += OnBeforeRender;
     }

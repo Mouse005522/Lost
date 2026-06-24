@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Kun.Tool
 {
@@ -44,7 +45,7 @@ namespace Kun.Tool
                 }
                 catch (Exception ex)
                 {
-                    LoggerRouter.Exception (ex);
+                    Debug.LogException (ex);
                 }
             }
         }
@@ -59,7 +60,7 @@ namespace Kun.Tool
                 }
                 catch (Exception ex)
                 {
-                    LoggerRouter.Exception (ex);
+                    Debug.LogException (ex);
                 }
             }
 
@@ -76,7 +77,7 @@ namespace Kun.Tool
                 }
                 catch (Exception ex)
                 {
-                    LoggerRouter.Exception (ex);
+                    Debug.LogException (ex);
                 }
             }
         }
@@ -163,7 +164,7 @@ namespace Kun.Tool
                 }
                 catch (Exception ex)
                 {
-                    LoggerRouter.Exception (ex);
+                    Debug.LogException (ex);
                 }
             }
 
@@ -175,7 +176,7 @@ namespace Kun.Tool
                 }
                 catch (Exception ex)
                 {
-                    LoggerRouter.Exception (ex);
+                    Debug.LogException (ex);
                 }
             }
 
@@ -197,7 +198,7 @@ namespace Kun.Tool
                 }
                 catch (Exception ex)
                 {
-                    LoggerRouter.Exception (ex);
+                    Debug.LogException (ex);
                 }
             }
         }
@@ -220,7 +221,7 @@ namespace Kun.Tool
                     }
                     catch (Exception ex)
                     {
-                        LoggerRouter.Exception (ex);
+                        Debug.LogException (ex);
                     }
                 }
             }
@@ -237,7 +238,7 @@ namespace Kun.Tool
                 }
                 catch (Exception ex)
                 {
-                    LoggerRouter.Exception (ex);
+                    Debug.LogException (ex);
                 }
             }
         }
@@ -257,7 +258,7 @@ namespace Kun.Tool
                 }
                 catch (Exception ex)
                 {
-                    LoggerRouter.Exception (ex);
+                    Debug.LogException (ex);
                 }
             }
         }
@@ -277,7 +278,7 @@ namespace Kun.Tool
                 }
                 catch (Exception ex)
                 {
-                    LoggerRouter.Exception (ex);
+                    Debug.LogException (ex);
                 }
             }
         }
@@ -292,7 +293,7 @@ namespace Kun.Tool
                 }
                 catch (Exception ex)
                 {
-                    LoggerRouter.Exception (ex);
+                    Debug.LogException (ex);
                 }
             }
         }
@@ -310,7 +311,7 @@ namespace Kun.Tool
                 }
                 catch (Exception ex)
                 {
-                    LoggerRouter.Exception (ex);
+                    Debug.LogException (ex);
                 }
             }
 

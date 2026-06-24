@@ -17,6 +17,7 @@ namespace Kun.Tool
             base.Init ();
 
             InteractInput = serviceCollection.CreateRequest<KeyboardMouseInteractInput> ();
+            inputProviders.Add (InteractInput);
         }
 
         protected override void DoUpdate (float deltaTime)
