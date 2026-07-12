@@ -7,12 +7,6 @@ public class TipItem : Item
     [SerializeField]
     Button tipButton;
 
-    [SerializeField]
-    float interactDistance = 1f;
-
-    [EasyInject]
-    PlayerController playerController;
-
     bool isTipButtonVisible;
 
     protected override void Setup ()
@@ -83,11 +77,9 @@ public class TipItem : Item
     {
         if (IsInteractable)
         {
-            if (playerController != null)
+            if (TryGetItemManager (out ItemManager itemManager))
             {
-                float distance = Vector3.Distance (transform.position, playerController.transform.position);
-
-                SetTipButtonVisible (distance <= interactDistance);
+                SetTipButtonVisible (itemManager.CanInteractItem (this));
             }
             else
             {

@@ -7,6 +7,13 @@ public class ItemManager : FlowManager
     [EasyInject]
     OverlayCanvasController overlayCanvasController;
 
+    [EasyInject]
+    PlayerController playerController;
+
+    [Header("互動範圍")]
+    [SerializeField]
+    float interactDistance = 1f;
+
     List<Item> items = new List<Item> ();
 
     List<TipItem> tipItems = new List<TipItem> ();
@@ -76,6 +83,33 @@ public class ItemManager : FlowManager
             {
                 Debug.LogError ($"{name} 收到未知的 Item 訊息類型: {itemDto.msgType}", this);
             }
+        }
+    }
+
+    public bool CanInteractItem (Item item)
+    {
+        if (item != null)
+        {
+            return CanInteractPosition (item.transform.position);
+        }
+        else
+        {
+            Debug.LogError ($"{name} 收到空的 Item", this);
+            return false;
+        }
+    }
+
+    public bool CanInteractPosition (Vector3 position)
+    {
+        if (playerController != null)
+        {
+            float distance = Vector3.Distance (position, playerController.transform.position);
+            return distance <= interactDistance;
+        }
+        else
+        {
+            Debug.LogError ($"{name} 尚未透過 DI 取得 PlayerController", this);
+            return false;
         }
     }
 
