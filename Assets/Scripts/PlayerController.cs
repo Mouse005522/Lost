@@ -9,7 +9,18 @@ public class PlayerController : FlowComponent
     [EasyInject]
     InputController input;
 
+    [EasyInject]
+    BlockManager blockManager;
+
     InteractInputProvider InteractInput => input.InteractInput;
+
+    [SerializeField]
+    BoxCollider2D edge;
+
+    protected override void Init ()
+    {
+        base.Init ();
+    }
 
     protected override void DoUpdate (float deltaTime)
     {
@@ -23,6 +34,8 @@ public class PlayerController : FlowComponent
             moveDirection.Normalize ();
         }
 
-        transform.position += moveDirection * speed * deltaTime;
+        Vector3 moveDelta = moveDirection * speed * deltaTime;
+
+        transform.position = blockManager.CheckEdge (transform.position, moveDelta, edge);
     }
 }
