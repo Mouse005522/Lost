@@ -1,9 +1,13 @@
-using Kun.Tool;
+ï»¿using Kun.Tool;
 using UnityEngine;
+using System.Collections.Generic;
 
 public class BlockManager : FlowManager
 {
-    BlockCollector[] blockCollectors;
+    [EasyInject]
+    ItemManager itemManager;
+
+    RuntimeBlockEntry[] runtimeBlockEntries;
 
     BlockCollector curBlockCollector;
     BlockEntry curBlock;
@@ -11,7 +15,38 @@ public class BlockManager : FlowManager
     protected override void Setup ()
     {
         base.Setup ();
-        blockCollectors = GetComponentsInChildren<BlockCollector> (true);
+        var collectors = GetComponentsInChildren<BlockCollector>(true);
+        runtimeBlockEntries = new RuntimeBlockEntry[collectors.Length];
+        for (int i = 0; i < collectors.Length; i++)
+        {
+            var items = collectors[i].GetComponentsInChildren<Item>(true);
+            runtimeBlockEntries[i] = new RuntimeBlockEntry(collectors[i], items);
+        }
+    }
+
+    protected override void PrepareSubFlowables ()
+    {
+        base.PrepareSubFlowables ();
+        if (runtimeBlockEntries == null)
+        {
+            var collectors = GetComponentsInChildren<BlockCollector> (true);
+            runtimeBlockEntries = new RuntimeBlockEntry[collectors.Length];
+            for (int i = 0; i < collectors.Length; i++)
+            {
+                var items = collectors[i].GetComponentsInChildren<Item> (true);
+                runtimeBlockEntries[i] = new RuntimeBlockEntry (collectors[i], items);
+            }
+        }
+
+        if (runtimeBlockEntries != null)
+        {
+            List<Item> allItems = new List<Item> ();
+            foreach (var entry in runtimeBlockEntries)
+            {
+                allItems.AddRange (entry.Items);
+            }
+            subFlowables.AddRange (allItems.ConvertAll (item => item as IFlowable));
+        }
     }
 
     protected override void Init ()
@@ -20,7 +55,7 @@ public class BlockManager : FlowManager
 
         if (!CheckCompleteness ())
         {
-            Debug.LogError ("BlockManager §¹³ÆÀË¬d¥¢±Ñ");
+            Debug.LogError ("BlockManager å®Œå‚™æª¢æŸ¥å¤±æ•—");
             return;
         }
 
@@ -30,29 +65,30 @@ public class BlockManager : FlowManager
         }
         else
         {
-            Debug.LogError ("BlockManager ªì©l¤Æ¥¢±Ñ, §ä¤£¨ì°_©lªº BlockCollector");
+            Debug.LogError ("BlockManager åˆå§‹åŒ–å¤±æ•—, æ‰¾ä¸åˆ°èµ·å§‹çš„ BlockCollector");
         }
     }
 
     bool CheckCompleteness ()
     {
-        if (blockCollectors == null)
+        if (runtimeBlockEntries == null)
             return false;
 
         bool hasRoot = false;
         System.Collections.Generic.HashSet<string> keys = new System.Collections.Generic.HashSet<string> ();
 
-        foreach (var collector in blockCollectors)
+        foreach (var entry in runtimeBlockEntries)
         {
+            var collector = entry.Collector;
             if (string.IsNullOrEmpty (collector.key))
             {
-                Debug.LogError ($"BlockCollector {collector.name} ¯Ê¤Ö key");
+                Debug.LogError ($"BlockCollector {collector.name} ç¼ºå°‘ key");
                 return false;
             }
 
             if (!keys.Add (collector.key))
             {
-                Debug.LogError ($"BlockCollector key ­«½Æ: {collector.key}");
+                Debug.LogError ($"BlockCollector key é‡è¤‡: {collector.key}");
                 return false;
             }
 
@@ -60,28 +96,28 @@ public class BlockManager : FlowManager
             {
                 if (hasRoot)
                 {
-                    Debug.LogError ("¦³¦h­Ó¬° root ªº BlockCollector");
+                    Debug.LogError ("æœ‰å¤šå€‹ç‚º root çš„ BlockCollector");
                     return false;
                 }
                 hasRoot = true;
 
                 if (string.IsNullOrEmpty (collector.rootKey))
                 {
-                    Debug.LogError ($"°_©l BlockCollector {collector.key} ¯Ê¤Ö rootKey");
+                    Debug.LogError ($"èµ·å§‹ BlockCollector {collector.key} ç¼ºå°‘ rootKey");
                     return false;
                 }
             }
 
             if (collector.edge == null)
             {
-                Debug.LogError ($"BlockCollector {collector.key} ¯Ê¤Ö edge ¸I¼²Åé");
+                Debug.LogError ($"BlockCollector {collector.key} ç¼ºå°‘ edge ç¢°æ’é«”");
                 return false;
             }
         }
 
-        if (!hasRoot)
+        if (hasRoot == false)
         {
-            Debug.LogError ("§ä¤£¨ì¬° root ªº BlockCollector");
+            Debug.LogError ("æ‰¾ä¸åˆ°ç‚º root çš„ BlockCollector");
             return false;
         }
 
@@ -90,98 +126,102 @@ public class BlockManager : FlowManager
 
     public bool TryEnterBlockCollector (string key)
     {
-        foreach (var collector in blockCollectors)
+        foreach (var entry in runtimeBlockEntries)
         {
+            var collector = entry.Collector;
             if (collector.key == key)
             {
                 if (collector.TryEnterBlock (collector.rootKey, out BlockEntry block))
                 {
                     curBlockCollector = collector;
                     curBlock = block;
+                    itemManager?.SetCurrentItems(entry.Items);
                     return true;
                 }
                 else
                 {
-                    Debug.LogError ($"BlockCollector key {key} §ä¤£¨ì°_©l block : {collector.rootKey}");
+                    Debug.LogError ($"BlockCollector key {key} æ‰¾ä¸åˆ°èµ·å§‹ block : {collector.rootKey}");
                     return false;
                 }
             }
         }
 
-        Debug.LogError ($"§ä¤£¨ì¹ïÀ³ªº BlockCollector, key: {key}");
+        Debug.LogError ($"æ‰¾ä¸åˆ°å°æ‡‰çš„ BlockCollector, key: {key}");
         return false;
     }
 
     bool TryEnterFirstBlockCollector ()
     {
-        foreach (var collector in blockCollectors)
+        foreach (var entry in runtimeBlockEntries)
         {
+            var collector = entry.Collector;
             if (collector.isRoot)
             {
                 if (collector.TryEnterBlock (collector.rootKey, out BlockEntry block))
                 {
                     curBlockCollector = collector;
                     curBlock = block;
+                    itemManager?.SetCurrentItems(entry.Items);
                     return true;
                 }
                 else
                 {
-                    Debug.LogError ($"°_©l BlockCollector §ä¤£¨ì°_©l block : {collector.rootKey}");
+                    Debug.LogError ($"èµ·å§‹ BlockCollector æ‰¾ä¸åˆ°èµ·å§‹ block : {collector.rootKey}");
                     return false;
                 }
             }
         }
 
-        Debug.LogError ("§ä¤£¨ì¬° root ªº BlockCollector");
+        Debug.LogError ("æ‰¾ä¸åˆ°ç‚º root çš„ BlockCollector");
         return false;
     }
 
     /// <summary>
-    /// ÀË¬d¨Ã­­¨î²¾°ÊªÌ¦b°Ï¶ôÃä¬É¤º¡C
-    /// ÅŞ¿è¬°¡GÀË¬d²¾°Ê«áªº¹w´Á¦ì¸m¬O§_¥X¬É¡A
-    /// ­ì«h¤W¶È­­¨î¶W¹LÃä¬É¤è¦Vªº¦ì²¾¡C
+    /// æª¢æŸ¥ä¸¦é™åˆ¶ç§»å‹•è€…åœ¨å€å¡Šé‚Šç•Œå…§ã€‚
+    /// é‚è¼¯ç‚ºï¼šæª¢æŸ¥ç§»å‹•å¾Œçš„é æœŸä½ç½®æ˜¯å¦å‡ºç•Œï¼Œ
+    /// åŸå‰‡ä¸Šåƒ…é™åˆ¶è¶…éé‚Šç•Œæ–¹å‘çš„ä½ç§»ã€‚
     /// </summary>
-    /// <param name="origin">²¾°Ê«eªº­ìÂI</param>
-    /// <param name="moveDelta">²¾°Ê¦V¶q</param>
-    /// <param name="moverEdge">²¾°ÊªÌ¥»¨­ªº¸I¼²Åé</param>
-    /// <returns>­×¥¿«áªº¹ê»Ú®y¼Ğ</returns>
+    /// <param name="origin">ç§»å‹•å‰çš„åŸé»</param>
+    /// <param name="moveDelta">ç§»å‹•å‘é‡</param>
+    /// <param name="moverEdge">ç§»å‹•è€…æœ¬èº«çš„ç¢°æ’é«”</param>
+    /// <returns>ä¿®æ­£å¾Œçš„å¯¦éš›åº§æ¨™</returns>
     public Vector3 CheckEdge (Vector3 origin, Vector3 moveDelta, BoxCollider2D moverEdge)
     {
-        // ­Y¯Ê¥FÃä¬É©Î²¾°ÊªÌ¨S¦³µ¹¤©¸I¼²Åé¡A«h¤£§@­­¨î¡Aª½±µ®M¥Î²¾°Ê¦V¶q
+        // è‹¥ç¼ºä¹é‚Šç•Œæˆ–ç§»å‹•è€…æ²’æœ‰çµ¦äºˆç¢°æ’é«”ï¼Œå‰‡ä¸ä½œé™åˆ¶ï¼Œç›´æ¥å¥—ç”¨ç§»å‹•å‘é‡
         if (curBlockCollector == null || curBlockCollector.edge == null || moverEdge == null)
             return origin + moveDelta;
 
-        // ¨ú±o·í«e°Ï¶ôªºÃä¬É½d³ò
+        // å–å¾—ç•¶å‰å€å¡Šçš„é‚Šç•Œç¯„åœ
         Bounds blockBounds = curBlockCollector.edge.bounds;
 
-        // ¨ú±o²¾°ÊªÌ·í«eªº¸I¼²Ãä¬É
+        // å–å¾—ç§»å‹•è€…ç•¶å‰çš„ç¢°æ’é‚Šç•Œ
         Bounds currentMoverBounds = moverEdge.bounds;
         Vector3 extents = currentMoverBounds.extents;
 
         Vector3 allowedDelta = moveDelta;
 
-        // === X¶b¦VÀË¬d ===
-        if (allowedDelta.x > 0) // ©¹¥k²¾
+        // === Xè»¸å‘æª¢æŸ¥ ===
+        if (allowedDelta.x > 0) // å¾€å³ç§»
         {
             float distToEdge = blockBounds.max.x - (currentMoverBounds.center.x + extents.x);
-            // ­Y¤w¸g¶KÀğ©Î·L¤p¬ï³z¡A¸Ó¤è¦V¤£µ¹¨«¡A¦ı¡u¤£¤Ï±À¡v (¶ZÂ÷¤£¥i¤p©ó0)
+            // è‹¥å·²ç¶“è²¼ç‰†æˆ–å¾®å°ç©¿é€ï¼Œè©²æ–¹å‘ä¸çµ¦èµ°ï¼Œä½†ã€Œä¸åæ¨ã€ (è·é›¢ä¸å¯å°æ–¼0)
             if (distToEdge < 0) distToEdge = 0;
 
             if (allowedDelta.x > distToEdge)
                 allowedDelta.x = distToEdge;
         }
-        else if (allowedDelta.x < 0) // ©¹¥ª²¾
+        else if (allowedDelta.x < 0) // å¾€å·¦ç§»
         {
             float distToEdge = blockBounds.min.x - (currentMoverBounds.center.x - extents.x);
-            // ­Y¤w¸g¶KÀğ©Î·L¤p¬ï³z¡A¤£¤Ï±À (¶ZÂ÷¤£¥i¤j©ó0)
+            // è‹¥å·²ç¶“è²¼ç‰†æˆ–å¾®å°ç©¿é€ï¼Œä¸åæ¨ (è·é›¢ä¸å¯å¤§æ–¼0)
             if (distToEdge > 0) distToEdge = 0;
 
             if (allowedDelta.x < distToEdge)
                 allowedDelta.x = distToEdge;
         }
 
-        // === Y¶b¦VÀË¬d ===
-        if (allowedDelta.y > 0) // ©¹¤W²¾
+        // === Yè»¸å‘æª¢æŸ¥ ===
+        if (allowedDelta.y > 0) // å¾€ä¸Šç§»
         {
             float distToEdge = blockBounds.max.y - (currentMoverBounds.center.y + extents.y);
             if (distToEdge < 0) distToEdge = 0;
@@ -189,7 +229,7 @@ public class BlockManager : FlowManager
             if (allowedDelta.y > distToEdge)
                 allowedDelta.y = distToEdge;
         }
-        else if (allowedDelta.y < 0) // ©¹¤U²¾
+        else if (allowedDelta.y < 0) // å¾€ä¸‹ç§»
         {
             float distToEdge = blockBounds.min.y - (currentMoverBounds.center.y - extents.y);
             if (distToEdge > 0) distToEdge = 0;
@@ -198,7 +238,7 @@ public class BlockManager : FlowManager
                 allowedDelta.y = distToEdge;
         }
 
-        // ®M¥Î³Ì²×¤¹³\ªº¦ì²¾¶q¡A½T«O­ì¥»¤£°Êªº¶b©ÎªÌ¥¼¥X¬Éªº¶b§¹¬ü«O¯d
+        // å¥—ç”¨æœ€çµ‚å…è¨±çš„ä½ç§»é‡ï¼Œç¢ºä¿åŸæœ¬ä¸å‹•çš„è»¸æˆ–è€…æœªå‡ºç•Œçš„è»¸å®Œç¾ä¿ç•™
         return origin + allowedDelta;
     }
 }

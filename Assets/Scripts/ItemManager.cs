@@ -17,28 +17,16 @@ public class ItemManager : FlowManager
     List<Item> items = new List<Item> ();
 
     List<TipItem> tipItems = new List<TipItem> ();
-    List<ExploreItem> exploreItems = new List<ExploreItem> ();
 
-    [SerializeField]
-    GameObject itemRoot;
-
-    protected override void PrepareSubFlowables ()
+    public void SetCurrentItems(IEnumerable<Item> newItems)
     {
-        base.PrepareSubFlowables ();
-        items.Clear ();
-
-        if (itemRoot != null)
+        items.Clear();
+        if (newItems != null)
         {
-            items.AddRange (itemRoot.GetComponentsInChildren<Item> (true));
-
-            tipItems = items.FindAll (item => item is TipItem).ConvertAll (item => item as TipItem);
-
-            subFlowables.AddRange (items.ConvertAll (item => item as IFlowable));
+            items.AddRange(newItems);
         }
-        else
-        {
-            Debug.LogError ($"{name} 沒有綁定 itemRoot", this);
-        }
+
+        tipItems = items.FindAll(item => item is TipItem).ConvertAll(item => item as TipItem);
     }
 
     public void ReceiveItemMessage (ItemDTO itemDto)
