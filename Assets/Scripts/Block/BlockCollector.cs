@@ -15,9 +15,13 @@ public class BlockCollector : MonoBehaviour
     [SerializeField]
     Transform camPoint;
 
+    public Transform CamPoint => camPoint;
+
     [Header ("進入點")]
     [SerializeField]
     List<BlockEntry> entrys = new List<BlockEntry> ();
+
+    public IReadOnlyList<BlockEntry> Entrys => entrys;
 
     [SerializeField]
     public BoxCollider2D edge;
@@ -35,17 +39,5 @@ public class BlockCollector : MonoBehaviour
 
         block = null;
         return false;
-    }
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 }

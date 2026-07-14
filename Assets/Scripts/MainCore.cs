@@ -17,6 +17,9 @@ public class MainCore : MonoBehaviour
     [SerializeField]
     BlockManager blockManager;
 
+    [SerializeField]
+    CameraContainerManager cameraContainerManager;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start ()
     {
@@ -28,6 +31,7 @@ public class MainCore : MonoBehaviour
         collection.AddService (overlayCanvasController);
         collection.AddService (itemManager);
         collection.AddService (blockManager);
+        collection.AddService (cameraContainerManager);
 
         collection.BindingService ();
         collection.SetupServices ();

@@ -1,6 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
 
+/// <summary>
+/// 撿起物件時顯示
+/// </summary>
 public class ExploreItem : Item, IPointerClickHandler
 {
     [SerializeField]

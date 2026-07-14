@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using Kun.Tool;
+using UnityEngine;
 
 public class ItemManager : FlowManager
 {
@@ -10,20 +11,40 @@ public class ItemManager : FlowManager
     [EasyInject]
     PlayerController playerController;
 
+    [EasyInject]
+    InputController inputController;
+
+    [EasyInject]
+    BlockManager blockManager;
+
     [Header("互動範圍")]
     [SerializeField]
-    float interactDistance = 1f;
+    float interactDistance = 0.3f;
+
+    [Header ("傳送範圍")]
+    [SerializeField]
+    float portalDistance = 0.5f;
 
     List<Item> items = new List<Item> ();
 
     List<TipItem> tipItems = new List<TipItem> ();
 
-    public void SetCurrentItems(IEnumerable<Item> newItems)
+    List<PortalCollector> currentPortalCollectors = new List<PortalCollector> ();
+
+    public IReadOnlyList<PortalCollector> CurrentPortalCollectors => currentPortalCollectors;
+
+    public void SetCurrentBlock(RuntimeBlock runtimeBlock)
     {
+        currentPortalCollectors.Clear ();
         items.Clear();
-        if (newItems != null)
+        if (runtimeBlock != null && runtimeBlock.Items != null)
         {
-            items.AddRange(newItems);
+            if (runtimeBlock.PortalCollectors != null)
+            {
+                currentPortalCollectors.AddRange (runtimeBlock.PortalCollectors);
+            }
+
+            items.AddRange(runtimeBlock.Items);
         }
 
         tipItems = items.FindAll(item => item is TipItem).ConvertAll(item => item as TipItem);
@@ -74,6 +95,76 @@ public class ItemManager : FlowManager
         }
     }
 
+    protected override void DoPhysicsRateUpdate (float physicsRate)
+    {
+        base.DoPhysicsRateUpdate (physicsRate);
+        CheckPortal ();
+    }
+
+    void CheckPortal ()
+    {
+        if (inputController == null || inputController.InteractInput == null)
+        {
+            return;
+        }
+
+        Vector2Int moveInput = inputController.InteractInput.GetMoveInput ();
+        if (moveInput == Vector2Int.zero)
+        {
+            return;
+        }
+
+        if (TryGetPortalDirection (moveInput, out PortalDirection direction))
+        {
+            foreach (PortalCollector portalCollector in currentPortalCollectors)
+            {
+                if (portalCollector != null && portalCollector.Direction == direction && CanPortalPosition (portalCollector.transform.position))
+                {
+                    if (blockManager != null)
+                    {
+                        if (blockManager.TryEnterBlockCollector (portalCollector.blockKey, portalCollector.entryKey))
+                        {
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError ($"{name} 尚未透過 DI 取得 BlockManager", this);
+                    }
+                }
+            }
+        }
+    }
+
+    bool TryGetPortalDirection (Vector2Int moveInput, out PortalDirection direction)
+    {
+        if (moveInput.y > 0)
+        {
+            direction = PortalDirection.Front;
+            return true;
+        }
+        else if (moveInput.y < 0)
+        {
+            direction = PortalDirection.Back;
+            return true;
+        }
+        else if (moveInput.x < 0)
+        {
+            direction = PortalDirection.Left;
+            return true;
+        }
+        else if (moveInput.x > 0)
+        {
+            direction = PortalDirection.Right;
+            return true;
+        }
+        else
+        {
+            direction = PortalDirection.Front;
+            return false;
+        }
+    }
+
     public bool CanInteractItem (Item item)
     {
         if (item != null)
@@ -93,6 +184,20 @@ public class ItemManager : FlowManager
         {
             float distance = Vector3.Distance (position, playerController.transform.position);
             return distance <= interactDistance;
+        }
+        else
+        {
+            Debug.LogError ($"{name} 尚未透過 DI 取得 PlayerController", this);
+            return false;
+        }
+    }
+
+    public bool CanPortalPosition (Vector3 position)
+    {
+        if (playerController != null)
+        {
+            float distance = Vector3.Distance (position, playerController.transform.position);
+            return distance <= portalDistance;
         }
         else
         {

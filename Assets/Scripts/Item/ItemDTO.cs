@@ -15,6 +15,12 @@ public class ItemDTO
 
 public enum ItemMsgType
 {
+    /// <summary>
+    /// 撿起物件時顯示
+    /// </summary>
     Explore,
+    /// <summary>
+    /// NPC提示訊息
+    /// </summary>
     Tip,
 }

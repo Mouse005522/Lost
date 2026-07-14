@@ -7,7 +7,13 @@ public class BlockManager : FlowManager
     [EasyInject]
     ItemManager itemManager;
 
-    RuntimeBlockEntry[] runtimeBlockEntries;
+    [EasyInject]
+    PlayerController player;
+
+    [EasyInject]
+    CameraContainerManager cameraContainerManager;
+
+    RuntimeBlock[] runtimeBlockEntries;
 
     BlockCollector curBlockCollector;
     BlockEntry curBlock;
@@ -16,11 +22,12 @@ public class BlockManager : FlowManager
     {
         base.Setup ();
         var collectors = GetComponentsInChildren<BlockCollector>(true);
-        runtimeBlockEntries = new RuntimeBlockEntry[collectors.Length];
+        runtimeBlockEntries = new RuntimeBlock[collectors.Length];
         for (int i = 0; i < collectors.Length; i++)
         {
+            var portalCollectors = new List<PortalCollector> (collectors[i].GetComponentsInChildren<PortalCollector> (true));
             var items = collectors[i].GetComponentsInChildren<Item>(true);
-            runtimeBlockEntries[i] = new RuntimeBlockEntry(collectors[i], items);
+            runtimeBlockEntries[i] = new RuntimeBlock (collectors[i], portalCollectors, items);
         }
     }
 
@@ -30,11 +37,12 @@ public class BlockManager : FlowManager
         if (runtimeBlockEntries == null)
         {
             var collectors = GetComponentsInChildren<BlockCollector> (true);
-            runtimeBlockEntries = new RuntimeBlockEntry[collectors.Length];
+            runtimeBlockEntries = new RuntimeBlock[collectors.Length];
             for (int i = 0; i < collectors.Length; i++)
             {
+                var portalCollectors = new List<PortalCollector> (collectors[i].GetComponentsInChildren<PortalCollector> (true));
                 var items = collectors[i].GetComponentsInChildren<Item> (true);
-                runtimeBlockEntries[i] = new RuntimeBlockEntry (collectors[i], items);
+                runtimeBlockEntries[i] = new RuntimeBlock (collectors[i], portalCollectors, items);
             }
         }
 
@@ -75,7 +83,7 @@ public class BlockManager : FlowManager
             return false;
 
         bool hasRoot = false;
-        System.Collections.Generic.HashSet<string> keys = new System.Collections.Generic.HashSet<string> ();
+        HashSet<string> keys = new HashSet<string> ();
 
         foreach (var entry in runtimeBlockEntries)
         {
@@ -124,29 +132,51 @@ public class BlockManager : FlowManager
         return true;
     }
 
-    public bool TryEnterBlockCollector (string key)
+    public bool TryEnterBlockCollector (string blockKey, string entryKey)
     {
         foreach (var entry in runtimeBlockEntries)
         {
             var collector = entry.Collector;
-            if (collector.key == key)
+            if (collector.key == blockKey)
             {
-                if (collector.TryEnterBlock (collector.rootKey, out BlockEntry block))
+                if (collector.TryEnterBlock (entryKey, out BlockEntry block))
                 {
                     curBlockCollector = collector;
                     curBlock = block;
-                    itemManager?.SetCurrentItems(entry.Items);
+                    itemManager?.SetCurrentBlock(entry);
+
+                    if (collector.CamPoint != null)
+                    {
+                        if (cameraContainerManager != null)
+                        {
+                            cameraContainerManager.MoveTo (collector.CamPoint);
+                        }
+                        else
+                        {
+                            Debug.LogError ("尚未透過 DI 取得 CameraContainerManager");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError ($"BlockCollector {collector.key} 缺少 camPoint");
+                    }
+
+                    if (player != null && block.playerPoint != null)
+                    {
+                        player.transform.position = block.playerPoint.position;
+                    }
+
                     return true;
                 }
                 else
                 {
-                    Debug.LogError ($"BlockCollector key {key} 找不到起始 block : {collector.rootKey}");
+                    Debug.LogError ($"BlockCollector key {blockKey} 找不到起始 block : {entryKey}");
                     return false;
                 }
             }
         }
 
-        Debug.LogError ($"找不到對應的 BlockCollector, key: {key}");
+        Debug.LogError ($"找不到對應的 BlockCollector, key: {blockKey}");
         return false;
     }
 
@@ -157,18 +187,7 @@ public class BlockManager : FlowManager
             var collector = entry.Collector;
             if (collector.isRoot)
             {
-                if (collector.TryEnterBlock (collector.rootKey, out BlockEntry block))
-                {
-                    curBlockCollector = collector;
-                    curBlock = block;
-                    itemManager?.SetCurrentItems(entry.Items);
-                    return true;
-                }
-                else
-                {
-                    Debug.LogError ($"起始 BlockCollector 找不到起始 block : {collector.rootKey}");
-                    return false;
-                }
+                return TryEnterBlockCollector (collector.key, collector.rootKey);
             }
         }
 
